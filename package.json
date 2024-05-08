@@ -1,0 +1,25 @@
+{
+  "name": "bookmeter-exporter",
+  "version": "1.0.0",
+  "description": "Export your own bookmeter.com data from the website.",
+  "type": "module",
+  "scripts": {
+    "format": "prettier . --write",
+    "test": "pnpm exec playwright test --ui",
+    "export": "pnpm exec playwright test"
+  },
+  "keywords": [
+    "bookmeter"
+  ],
+  "author": "TAKAHASHI Shuuji <shuuji3@gmail.com>",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@playwright/test": "^1.43.1",
+    "@types/node": "^20.12.8",
+    "prettier": "3.2.5"
+  },
+  "dependencies": {
+    "csv-stringify": "^6.4.6",
+    "dotenv": "^16.4.5"
+  }
+}
