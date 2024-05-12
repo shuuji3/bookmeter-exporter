@@ -173,6 +173,7 @@ async function getBooksFromPaginatedPages<BookType>(
         .getByRole('link', { name: '次', exact: true })
         .click({ timeout: 10_000 })
       await expect(page.getByText('読み込み中です')).toBeHidden()
+      await page.waitForTimeout(1_000)
     } catch (e) {
       // expected timeout when no more next link
       if (e instanceof errors.TimeoutError) {
