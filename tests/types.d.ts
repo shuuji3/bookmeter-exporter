@@ -1,3 +1,11 @@
+export type Profile = {
+  id: string
+  name: string
+  iconUrl: string
+  registrationDate: string
+  firstRecordingDate: string
+}
+
 export type Book = {
   bookAuthor: string | null
   bookPage: number

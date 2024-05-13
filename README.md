@@ -13,7 +13,7 @@ cp .env.sample .env
 editor .env
 ```
 
-Export JSON and CSV files from four pages (読んだ本、読んでる本、積読本、読みたい本) under `export/` directory:
+Export JSON and CSV files from four pages (読んだ本、読んでる本、積読本、読みたい本、プロフィール) under `export/` directory:
 
 ```shell
 pnpm install

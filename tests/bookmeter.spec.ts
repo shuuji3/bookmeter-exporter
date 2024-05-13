@@ -1,8 +1,10 @@
-import { existsSync } from 'node:fs'
+import { createWriteStream, existsSync } from 'node:fs'
+import { Readable } from 'node:stream'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { stringify } from 'csv-stringify/sync'
 import { test, expect, errors, type Locator, type Page } from '@playwright/test'
-import { type Book, type BookWithReview } from './types'
+import { type Book, type BookWithReview, Profile } from './types'
+import { finished } from 'node:stream/promises'
 
 const EMAIL = process.env.EMAIL
 const PASSWORD = process.env.PASSWORD
@@ -23,6 +25,41 @@ test.beforeAll('login to the account', async ({ browser }) => {
   )
 })
 
+async function downloadImage(iconUrl: string) {
+  const extension = iconUrl.split('.').slice(-1)[0]
+  const res = await fetch(iconUrl)
+  const writeStream = createWriteStream(`export/profile.${extension}`)
+  await finished(
+    // @ts-ignore
+    Readable.fromWeb(res.body).pipe(writeStream)
+  )
+}
+
+test('プロフィールのデータをエクスポート', async () => {
+  const img = page.getByRole('figure').getByRole('img')
+  const name = await img.getAttribute('alt')
+  const iconUrl = await img.getAttribute('src')
+
+  const registrationDate = (
+    await page.locator('.userdata dl > dd:nth-child(2)').textContent()
+  ).replace(/^(\d+)\/(\d+)\/(\d+)（.+$/, '$1-$2-$3')
+
+  const firstRecordingDate = (
+    await page.locator('.userdata dl > dd:nth-child(4)').textContent()
+  ).replace(/^(\d+)\/(\d+)\/(\d+)（.+$/, '$1-$2-$3')
+
+  const profile: Profile = {
+    id: USER_ID,
+    name,
+    iconUrl,
+    registrationDate,
+    firstRecordingDate,
+  }
+
+  await saveProfile(profile)
+  await downloadImage(iconUrl)
+})
+
 test('「読んだ本」ページのデータをエクスポート', async () => {
   await page.goto(
     `https://bookmeter.com/users/${USER_ID}/books/read?display_type=list`
@@ -37,7 +74,7 @@ test('「読んだ本」ページのデータをエクスポート', async () =>
   const books =
     await getBooksFromPaginatedPages<BookWithReview>(getBooksFromPage)
 
-  await save('finished-books', books)
+  await saveBooks('finished-books', books)
 })
 
 test('「読んでる本」ページのデータをエクスポート', async () => {
@@ -49,7 +86,7 @@ test('「読んでる本」ページのデータをエクスポート', async ()
   }
   const books = await getBooksFromPaginatedPages<Book>(getBooksFromPage)
 
-  await save('reading-books', books)
+  await saveBooks('reading-books', books)
 })
 
 test('「積読本」ページのデータをエクスポート', async () => {
@@ -61,7 +98,7 @@ test('「積読本」ページのデータをエクスポート', async () => {
   }
   const books = await getBooksFromPaginatedPages<Book>(getBooksFromPage)
 
-  await save('reading-list-books', books)
+  await saveBooks('reading-list-books', books)
 })
 
 test('「読みたい本」ページのデータをエクスポート', async () => {
@@ -73,7 +110,7 @@ test('「読みたい本」ページのデータをエクスポート', async ()
   }
   const books = await getBooksFromPaginatedPages<Book>(getBooksFromPage)
 
-  await save('wish-list-books', books)
+  await saveBooks('wish-list-books', books)
 })
 
 function getBooksFromBookRows(bookRows: Locator) {
@@ -148,14 +185,25 @@ async function getBooksFromBookThumbnails(bookList: Locator): Promise<Book[]> {
   )
 }
 
-async function save(basename: string, books: Book[]) {
+async function saveBooks(basename: string, data: Book[]) {
   if (!existsSync('export')) {
     await mkdir('export')
   }
-  await writeFile(`export/${basename}.json`, JSON.stringify(books, null, 2))
+  await writeFile(`export/${basename}.json`, JSON.stringify(data, null, 2))
   await writeFile(
     `export/${basename}.csv`,
-    stringify(books, { header: true, columns: Object.keys(books[0]) })
+    stringify(data, { header: true, columns: Object.keys(data[0]) })
+  )
+}
+
+async function saveProfile(data: Profile) {
+  if (!existsSync('export')) {
+    await mkdir('export')
+  }
+  await writeFile('export/profile.json', JSON.stringify(data, null, 2))
+  await writeFile(
+    'export/profile.csv',
+    stringify([data], { header: true, columns: Object.keys(data) })
   )
 }
 
